@@ -41,12 +41,12 @@ public class airobj
 
 		if (!isInited){
 			isInited = true;
-			int[] center = map.lnglatToXY (lon, lat, publicvar.zoom);
+			int[] center = maplib.lnglatToXY (lon, lat, publicvar.basezoom);
 			publicvar.basei = center [0];
 			publicvar.basej = center [1];
 		}
 
-		loc = map.getUnityPosfromLatlng (lon, lat, publicvar.zoom);
+		loc = maplib.getUnityPosfromLatlng (lon, lat, publicvar.basezoom);
 
 		go.transform.position = new Vector3(loc[0], height,loc[2]);
 		go.transform.Rotate(new Vector3 (0, 0, 0));

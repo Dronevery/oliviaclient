@@ -17,7 +17,7 @@ public class  auth: MonoBehaviour
 	public void begin()
 	{
 		try{
-			game0gui.gamelog("服务器连接成功，正在进行验证");	
+//			game0gui.gamelog("服务器连接成功，正在进行验证");	
 			JsonData authmes = new JsonData();
 			authmes["event"]="auth";
 			authmes["username"]=publicvar.username;
@@ -26,7 +26,7 @@ public class  auth: MonoBehaviour
 		}
 		catch
 		{
-			game0gui.gamelog("认证失败");
+//			game0gui.gamelog("认证失败");
 		}
 	}
 
@@ -50,9 +50,9 @@ public class  auth: MonoBehaviour
 			}
 			if (string.Equals(mes,"CONFIRM") )
 			{
-				game0gui.gamelog("认证成功");
+//				game0gui.gamelog("认证成功");
 //				publicvar.lengthmesh = (float) (double) data["lengthmesh"];
-				publicvar.loadwidth = (int) data["loadwidth"];
+//				publicvar.loadwidth = (int) data["loadwidth"];
 //				publicvar.basei = (int) data["basei"];
 //				publicvar.basej = (int) data["basej"];
 

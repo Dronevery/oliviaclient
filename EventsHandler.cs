@@ -32,8 +32,8 @@ public class EventsHandler: MonoBehaviour{
 			publicv.originairplane1 = this.originairplane;	
 			}
 
-		int i =map.lnglatToXY(publicvar.longitude,publicvar.latitude,publicvar.zoom)[0];
-		int j=  map.lnglatToXY(publicvar.longitude,publicvar.latitude,publicvar.zoom)[1];
+		int i =maplib.lnglatToXY(publicvar.longitude,publicvar.latitude,publicvar.basezoom)[0];
+		int j=  maplib.lnglatToXY(publicvar.longitude,publicvar.latitude,publicvar.basezoom)[1];
 		publicvar.basei = i;
 		publicvar.basej = j;
 		Debug.Log ("basei ,basej: " + i + " " + j);

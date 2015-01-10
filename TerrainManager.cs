@@ -30,6 +30,12 @@ public class TerrainManager : MonoBehaviour
 	}
 
 	public Terrain NewTerrainData(TerrainMetaData mdata, TextureData tdata, HeightmapMetaData hdata){
+		Terrain terrain;
+		if (terrains.ContainsKey(str(tdata.i,tdata.j, tdata.zoom))) {
+			terrain = terrains[str(tdata.i,tdata.j,tdata.zoom)];
+			terrain.gameObject.SetActive(true);
+			return terrain;
+				}
 		TerrainData terraindata = new TerrainData ();
 		// set some paras of the terrainTile
 		_InitTerrain(terraindata, mdata, hdata);
@@ -39,23 +45,18 @@ public class TerrainManager : MonoBehaviour
 
 		heightsloader.Enqueue (terraindata, tdata);
 
-		float[] xz = getPos (tdata.i, tdata.j);
-		GameObject terrainobject = Terrain.CreateTerrainGameObject (terraindata);
-		Terrain terrain = terrainobject.GetComponent<Terrain> ();
-		terraindata.size = new Vector3 (publicvar.lengthmesh, publicvar.maxHeight, publicvar.lengthmesh);
-		terrain.transform.position = new Vector3 (xz[0],0,xz[1]);
-		// register to the manager
-		terrains.Add(str(tdata.i,tdata.j), terrain);
+		terrain = setTerrPos (terraindata, tdata);
 
-//		System.Threading.Thread.Sleep (500);
-//		heightsloader.Startload ();
+		// register to the manager
+			terrains.Add(str(tdata.i,tdata.j, tdata.zoom), terrain);
+
 		return terrain;
 	}
 
-	public void DestroyTerrain(int i ,int j){
-		Terrain terrain = terrains[str (i, j)];
+	public void DestroyTerrain(int i ,int j, int zoom){
+		Terrain terrain = terrains[str (i, j, zoom)];
 		GameObject.Destroy (terrain);
-		terrains[str (i,j)] = null;
+		terrains[str (i,j, zoom)] = null;
 	}
 	
 
@@ -68,14 +69,14 @@ public class TerrainManager : MonoBehaviour
 		this.isUpdating = false;
 	}
 
-	public Terrain getTerrain(int i, int j){
-		return terrains [str (i,j)];
+	public Terrain getTerrain(int i, int j, int zoom){
+		return terrains [str (i,j, zoom)];
 	}
 
-	public Terrain getActiveTerrain(){
-		int[] center = getCurrentTile (plane);
-		return terrains [str (center[0],center[1])];
-	}
+//	public Terrain getActiveTerrain(int zoom){
+//		int[] center = maplib.getCurrentTile (plane ,zoom);
+//		return terrains [str (center[0],center[1])];
+//	}
 
 	public int numTerrain(){
 		return terrains.Count;
@@ -95,18 +96,17 @@ public class TerrainManager : MonoBehaviour
 			yield return new WaitForSeconds(3);
 			Debug.Log ("count"+terrains.Count);
 			// clear remote tiles
-			center = getCurrentTile(plane);
+			center = maplib.getCurrentTile(plane, publicvar.basezoom);
 			Debug.Log ("current tile--- i: " + center[0] + "  j: "+center[1]);
 			StartCoroutine(ClearRemoteTiles(center));
 			
 			//wait for a second 
 			yield return new WaitForSeconds(1);
 			// flush new tiles
-			center = getCurrentTile(plane);
+			center = maplib.getCurrentTile(plane, publicvar.basezoom);
 			StartCoroutine(FlushNewTiles(center));
 			if (!isUpdating) break;
 		}
-		
 	}
 
 	IEnumerator ClearRemoteTiles(int[] center){
@@ -126,7 +126,7 @@ public class TerrainManager : MonoBehaviour
 			}
 		}
 		foreach(int[] ij in terrainstodelete){
-			DestroyTerrain(ij[0], ij[1]);
+//			DestroyTerrain(ij[0], ij[1], publicvar.basezoom);
 		}
 		yield return 0;
 
@@ -139,7 +139,7 @@ public class TerrainManager : MonoBehaviour
 		}
 		for (int i =center[0] -maxTileX; i <= center[0]+maxTileX; i++) 
 			for (int j = center[1]-maxTileY; j <= center[1]+maxTileY; j++)
-			if (!terrains.ContainsKey(str (i,j))) {
+			if (!terrains.ContainsKey(str (i,j, publicvar.basezoom))) {
 				TerrainMetaData mdata = new TerrainMetaData();
 				TextureData tdata = new TextureData(i, j);
 				HeightmapMetaData hdata = new HeightmapMetaData();
@@ -158,7 +158,7 @@ public class TerrainManager : MonoBehaviour
 	IEnumerator loadTexture(TextureData tdata, TerrainData terraindata){
 		int i = tdata.i;
 		int j = tdata.j;
-		string path = mappath(i,j, publicvar.zoom);
+		string path = mappath(i,j, tdata.zoom);
 		FileInfo fi1 = new FileInfo(path);   
 		WWW www;
 		// file exists. Load from local cache.
@@ -175,7 +175,7 @@ public class TerrainManager : MonoBehaviour
 				var splats = new SplatPrototype[1];
 				splats[0] = new SplatPrototype();
 				splats[0].texture = www.texture;
-				splats[0].tileSize = new Vector2(publicvar.lengthmesh, publicvar.lengthmesh);
+				splats[0].tileSize = new Vector2(tdata.lengthmesh, tdata.lengthmesh);
 				
 				terraindata.splatPrototypes = splats;
 				www.Dispose();
@@ -186,7 +186,7 @@ public class TerrainManager : MonoBehaviour
 
 		// file not exits. load from Internet
 		else{
-			string url = remotemapurl(i,j,publicvar.zoom);
+			string url = remotemapurl(i,j,publicvar.basezoom);
 			www=new WWW(url);
 			yield return www;
 			if (www.error != null ){
@@ -197,7 +197,7 @@ public class TerrainManager : MonoBehaviour
 				var splats = new SplatPrototype[1];
 				splats[0] = new SplatPrototype();
 				splats[0].texture = www.texture;
-				splats[0].tileSize = new Vector2(publicvar.lengthmesh, publicvar.lengthmesh);
+				splats[0].tileSize = new Vector2(tdata.lengthmesh, tdata.lengthmesh);
 
 				terraindata.splatPrototypes = splats;
 				byte[] jpgData = www.texture.EncodeToJPG();
@@ -219,27 +219,19 @@ public class TerrainManager : MonoBehaviour
 			Directory.CreateDirectory(derictorypath);
 		return string.Format(Application.dataPath + "/Resources/map/{0}/{1}_{2}.jpg", zoom, i, j);
 	}
-	
-	protected float[] getPos(int i, int j){
-		float[] xy = new float[]{0f,0f};
-		xy [0] = (i - basei) * publicvar.lengthmesh;
-		xy [1] = -(j - basej) * publicvar.lengthmesh;
-		return xy;
+
+	public string str(int i, int j, int zoom){
+		return String.Format ("{0},{1},{2}", i, j, zoom);
 	}
 
-	protected int[] getCurrentTile(GameObject aircraft){
-		int[] ij = new int[2];
-		float x = aircraft.transform.position.x ;
-		float z = aircraft.transform.position.z ;
-		ij [0] = (int)((x + publicvar.lengthmesh / 2) / publicvar.lengthmesh);
-		ij [1] = (int)((z + publicvar.lengthmesh / 2) / publicvar.lengthmesh);
-		ij [0] += basei;
-		ij [1] = basej - ij [1];
-		return ij;
-	}
-
-	public string str(int i, int j){
-		return String.Format ("{0},{1}", i, j);
+	public Terrain setTerrPos (TerrainData terraindata, TextureData tdata){
+		float[] xz = maplib.getPos (tdata);
+		GameObject terrainobject = Terrain.CreateTerrainGameObject (terraindata);
+		terrainobject.name = string.Format ("{0},{1},{2}", tdata.i, tdata.j, tdata.zoom);
+		Terrain terrain = terrainobject.GetComponent<Terrain> ();
+		terraindata.size = new Vector3 (tdata.lengthmesh, publicvar.maxHeight, tdata.lengthmesh);
+		terrain.transform.position = new Vector3 (xz[0],0,xz[1]);
+		return terrain;
 	}
 
 	
