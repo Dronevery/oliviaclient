@@ -31,6 +31,8 @@ public class connect: MonoBehaviour
 	public JsonData temp_data;
 	private auth Auth;
 
+	public IDataManager _datamgr;
+
 	/* events api 
 	*/
 			// define delegate and events

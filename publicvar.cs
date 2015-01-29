@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class publicvar : MonoBehaviour {
+	public static Vector3 landPosition = new Vector3 (-1000, -1000, -1000);
 	public string mode = "navigate";
 	public GameObject originairplane1; // the model of the plane
 	public GameObject originairplane2;

@@ -5,7 +5,7 @@ using System;
 
 public class SettingsLogic : MonoBehaviour
 {
-	const List<string> MODES=new List<string>{"navigate","plan","settings","control"};
+	private readonly List<string> MODES=new List<string>{"navigate","plan","settings","control"};
 	publicvar publicv;
 
 		// Use this for initialization
@@ -27,8 +27,8 @@ public class SettingsLogic : MonoBehaviour
 	public void changeMode(string mode){
 		if (MODES.Contains(mode)) {
 			publicv.mode = mode;
-
-				}
+		}
 	}
+
 }
 

@@ -2,12 +2,13 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using AssemblyCSharp;
 
 
 public class PlanLogic : MonoBehaviour
 {
 	publicvar publicv;
-	PwManager pwmanager;
+	DataPathway datapathway;
 
 		// Use this for initialization
 		void Start ()
@@ -17,14 +18,14 @@ public class PlanLogic : MonoBehaviour
 			}catch (Exception ex){
 				print("Gameobject named publicvar not found! \n  " +ex.Message);
 			}
-		pwmanager = new PwManager ();
+		datapathway = new DataPathway ();
 		}
 	
 		// Update is called once per frame
 		void Update ()
 		{
 			if (publicv.mode == "plan") {
-						updateUIwith (pwmanager.nameCurrentPlane, pwmanager.getPathwayof(pwmanager.nameCurrentPlane));
+						updateUIwith (datapathway.nameCurrentPlane, datapathway.getPathwayof(datapathway.nameCurrentPlane));
 				}
 
 		}
@@ -33,9 +34,9 @@ public class PlanLogic : MonoBehaviour
 		if (publicv.mode == "plan") {
 			if (isOnmap()){
 				Vector3 pos = getPosfrom(Input.mousePosition);
-				Waypoint wp = maplib.getLonLatfrom(pos); // wp.altitude==0
-				pwmanager.push(pwmanager.nameCurrentPlane,wp);
-				updateUIwith (pwmanager.nameCurrentPlane, pwmanager.getPathwayof(pwmanager.nameCurrentPlane));
+				Location loc  = maplib.getLonLatfrom(pos); // wp.altitude==0
+				datapathway.Push(datapathway.nameCurrentPlane ,loc);
+				updateUIwith (datapathway.nameCurrentPlane, datapathway.getPathwayof(datapathway.nameCurrentPlane));
 			}
 		}
 	}
@@ -47,8 +48,11 @@ public class PlanLogic : MonoBehaviour
 
 
 	private bool isOnmap(){
+		return true;
 		}
 
-	private Vector3 getPosfrom(Vector3 mousePos){}
+	private Vector3 getPosfrom(Vector3 mousePos){
+		return new Vector3(0,0,0);
+	}
 }
 

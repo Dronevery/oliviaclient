@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using AssemblyCSharp;
 
 public class maplib //: MonoBehaviour
 {
@@ -74,14 +75,14 @@ public class maplib //: MonoBehaviour
 		return new float[2]{longitude, latitude};
 	}
 
-	public static Waypoint getLonLatfrom(Vector3 pos){
+	public static Location getLonLatfrom(Vector3 pos){
 		float x = pos.x;
 		float z = pos.z;
 		float lonlength = Mathf.Abs(XYToLonLat(publicvar.basei,publicvar.basej,publicvar.basezoom)[0]-XYToLonLat(publicvar.basei+1,publicvar.basej,publicvar.basezoom)[0]);
 		float latlength = Mathf.Abs(XYToLonLat(publicvar.basei,publicvar.basej,publicvar.basezoom)[1]-XYToLonLat(publicvar.basei,publicvar.basej+1,publicvar.basezoom)[1]);
 		float longitude = XYToLonLat (publicvar.basei, publicvar.basej, publicvar.basezoom) [0] + (x + 0.5f*publicvar.lengthmesh) * lonlength / publicvar.lengthmesh;
 		float latitude = XYToLonLat (publicvar.basei, publicvar.basej, publicvar.basezoom) [1] + (z - 0.5f*publicvar.lengthmesh) * latlength / publicvar.lengthmesh;
-		return new Waypoint(longitude,latitude,0);
+		return new Location(longitude,latitude,0);
 	}
 
 
