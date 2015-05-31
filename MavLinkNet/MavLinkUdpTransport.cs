@@ -26,178 +26,192 @@ using System.IO;
 using System.Net;
 using System.Threading;
 using System.Net.Sockets;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace MavLinkNet
 {
-    public class MavLinkUdpTransport: MavLinkGenericTransport
-    {
-        public int UdpListeningPort = 0;  // Any available port
-        public int UdpTargetPort = 14550;
-        public IPAddress TargetIpAddress = new IPAddress(new byte[] { 127, 0, 0, 1 });
-        public int HeartBeatUpdateRateMs = 1000;
-        
-        private ConcurrentQueue<byte[]> mReceiveQueue = new ConcurrentQueue<byte[]>();
-        private ConcurrentQueue<UasMessage> mSendQueue = new ConcurrentQueue<UasMessage>();
-        private AutoResetEvent mReceiveSignal = new AutoResetEvent(true);
-        private AutoResetEvent mSendSignal = new AutoResetEvent(true);
-        private MavLinkAsyncWalker mMavLink = new MavLinkAsyncWalker();
-        private UdpClient mUdpClient;
-        private bool mIsActive = true;
+	public class MavLinkUdpTransport: MavLinkGenericTransport
+	{
+		public int UdpListeningPort = 7777;
+		// Any available port
+		public int UdpTargetPort = 7778;
+		public IPAddress TargetIpAddress = new IPAddress (new byte[] { 127, 0, 0, 1 });
+		public int HeartBeatUpdateRateMs = 1000;
+
+		private Queue<byte[]> mReceiveQueue = new Queue<byte[]> ();
+		private Queue<UasMessage> mSendQueue = new Queue<UasMessage> ();
+		private AutoResetEvent mReceiveSignal = new AutoResetEvent (true);
+		private AutoResetEvent mSendSignal = new AutoResetEvent (true);
+		private MavLinkAsyncWalker mMavLink = new MavLinkAsyncWalker ();
+		private UdpClient mUdpClient;
+		private bool mIsActive = true;
 
 
-        public override void Initialize()
-        {
-            InitializeMavLink();
-            InitializeUdpListener(UdpListeningPort);
-            InitializeUdpSender(TargetIpAddress, UdpTargetPort);
-        }
+		public override void Initialize ()
+		{
+			InitializeMavLink ();
+			InitializeUdpListener (UdpListeningPort);
+			InitializeUdpSender (TargetIpAddress, UdpTargetPort);
+			Debug.Log ("udp transporter ready!");
+		}
 
-        public override void Dispose()
-        {
-            mIsActive = false;
-            mUdpClient.Close();
-            mReceiveSignal.Set();
-            mSendSignal.Set();
-        }
+		public override void Dispose ()
+		{
+			mIsActive = false;
+			mUdpClient.Close ();
+			mReceiveSignal.Set ();
+			mSendSignal.Set ();
+		}
 
-        private void InitializeMavLink()
-        {
-            mMavLink.PacketReceived += HandlePacketReceived;
-        }
+		private void InitializeMavLink ()
+		{
+			mMavLink.PacketReceived += HandlePacketReceived;
+		}
 
-        private void InitializeUdpListener(int port)
-        {
-            // Create UDP listening socket on port
-            IPEndPoint ep = new IPEndPoint(IPAddress.Any, port);
-            mUdpClient = new UdpClient(ep);
+		private void InitializeUdpListener (int port)
+		{
+			// Create UDP listening socket on port
+			IPEndPoint ep = new IPEndPoint (IPAddress.Any, port);
+			mUdpClient = new UdpClient (ep);
 
-            mUdpClient.BeginReceive(
-                new AsyncCallback(ReceiveCallback), ep);
+			mUdpClient.BeginReceive (
+				new AsyncCallback (ReceiveCallback), ep);
 
-            ThreadPool.QueueUserWorkItem(
-                new WaitCallback(ProcessReceiveQueue), null);
-        }
+			ThreadPool.QueueUserWorkItem (
+				new WaitCallback (ProcessReceiveQueue), null);
+		}
 
-        private void InitializeUdpSender(IPAddress targetIp, int targetPort)
-        {
-            ThreadPool.QueueUserWorkItem(
-               new WaitCallback(ProcessSendQueue), new IPEndPoint(targetIp, targetPort));
-        }
-
-
-        // __ Receive _________________________________________________________
+		private void InitializeUdpSender (IPAddress targetIp, int targetPort)
+		{
+			ThreadPool.QueueUserWorkItem (
+				new WaitCallback (ProcessSendQueue), new IPEndPoint (targetIp, targetPort));
+		}
 
 
-        private void ReceiveCallback(IAsyncResult ar)
-        {
-            try
-            {
-                IPEndPoint ep = ar.AsyncState as IPEndPoint;
-                mReceiveQueue.Enqueue(mUdpClient.EndReceive(ar, ref ep));
-
-                if (!mIsActive)
-                {
-                    mReceiveSignal.Set();
-                    return;
-                }
-
-                mUdpClient.BeginReceive(new AsyncCallback(ReceiveCallback), ar);
-
-                // Signal processReceive thread
-                mReceiveSignal.Set();
-            }
-            catch (SocketException)
-            {
-                mIsActive = false;
-            }
-        }
-
-        private void ProcessReceiveQueue(object state)
-        {
-            while (true)
-            {
-                byte[] buffer;
-
-                if (mReceiveQueue.TryDequeue(out buffer))
-                {
-                    mMavLink.ProcessReceivedBytes(buffer, 0, buffer.Length);
-                }
-                else
-                {
-                    // Empty queue, sleep until signalled
-                    mReceiveSignal.WaitOne();
-
-                    if (!mIsActive) break;
-                }
-            }
-
-            HandleReceptionEnded(this);
-        }
+		// __ Receive _________________________________________________________
 
 
-        // __ Send ____________________________________________________________
+		private void ReceiveCallback (IAsyncResult ar)
+		{
+			try {
+				IPEndPoint ep = ar.AsyncState as IPEndPoint;
+				mReceiveQueue.Enqueue (mUdpClient.EndReceive (ar, ref ep));
+
+				if (!mIsActive) {
+					mReceiveSignal.Set ();
+					return;
+				}
+				mReceiveSignal.Set ();
+				mUdpClient.BeginReceive (new AsyncCallback (ReceiveCallback), ar);
+
+				// Signal processReceive thread
+
+			} catch (SocketException) {
+				mIsActive = false;
+			}
+		}
+
+		private void ProcessReceiveQueue (object state)
+		{
+			while (true) {
+				byte[] buffer;
 
 
-        private void ProcessSendQueue(object state)
-        {
-            while (true)
-            {
-                UasMessage msg;
-
-                if (mSendQueue.TryDequeue(out msg))
-                {
-                    SendMavlinkMessage(state as IPEndPoint, msg);
-                }
-                else
-                {
-                    // Queue is empty, sleep until signalled
-                    mSendSignal.WaitOne();
-
-                    if (!mIsActive) break;
-                }
-            }
-        }
-
-        private void SendMavlinkMessage(IPEndPoint ep, UasMessage msg)
-        {
-            byte[] buffer = mMavLink.SerializeMessage(msg, MavlinkSystemId, MavlinkComponentId, true);
-            
-            mUdpClient.Send(buffer, buffer.Length, ep);
-        }
+				try {
+					buffer = mReceiveQueue.Dequeue ();
+				} catch (Exception e) {
+					Console.print ("cannot dequeue " + e.Message);
+					mReceiveSignal.WaitOne ();
+					if (!mIsActive) {
+						Console.print ("mIsActive false!!! connection lost");
+						break;
+					}
+					
+					continue;
+				}
+				Console.print ("buffer length: " + buffer.Length.ToString ());
+				mMavLink.ProcessReceivedBytes (buffer, 0, buffer.Length);
 
 
-        // __ Heartbeat _______________________________________________________
+				/*
+				if (mReceiveQueue.TryDequeue (out buffer)) {
+					mMavLink.ProcessReceivedBytes (buffer, 0, buffer.Length);
+				} else {
+					// Empty queue, sleep until signalled
+					mReceiveSignal.WaitOne ();
+
+					if (!mIsActive)
+						break;
+				}
+				*/
+			}
+
+			HandleReceptionEnded (this);
+		}
 
 
-        public void BeginHeartBeatLoop()
-        {
-            ThreadPool.QueueUserWorkItem(new WaitCallback(HeartBeatLoop), null);
-        }
-
-        private void HeartBeatLoop(object state)
-        {
-            while (true)
-            {
-                foreach (UasMessage m in UavState.GetHeartBeatObjects())
-                {
-                    SendMessage(m);
-                }
-
-                Thread.Sleep(HeartBeatUpdateRateMs);
-            }
-        }
+		// __ Send ____________________________________________________________
 
 
-        // __ API _____________________________________________________________
+		private void ProcessSendQueue (object state)
+		{
+			while (true) {
+				UasMessage msg = new UasMessage ();
+
+				try {
+					msg = mSendQueue.Dequeue ();
+				} catch (Exception e) {
+					// Queue is empty, sleep until signalled
+					Console.print ("send queue empty: " + e.Message);
+					mSendSignal.WaitOne ();
+
+					if (!mIsActive)
+						break;
+					continue;
+				} finally {
+					SendMavlinkMessage (state as IPEndPoint, msg);
+				}
+			}
+		}
+
+		private void SendMavlinkMessage (IPEndPoint ep, UasMessage msg)
+		{
+			byte[] buffer = mMavLink.SerializeMessage (msg, MavlinkSystemId, MavlinkComponentId, true);
+
+			mUdpClient.Send (buffer, buffer.Length, ep);
+		}
 
 
-        public override void SendMessage(UasMessage msg)
-        {
-            mSendQueue.Enqueue(msg);
+		// __ Heartbeat _______________________________________________________
 
-            // Signal send thread
-            mSendSignal.Set();
-        }
-    }
+
+		public void BeginHeartBeatLoop ()
+		{
+			ThreadPool.QueueUserWorkItem (new WaitCallback (HeartBeatLoop), null);
+		}
+
+		private void HeartBeatLoop (object state)
+		{
+			while (true) {
+				foreach (UasMessage m in UavState.GetHeartBeatObjects()) {
+					SendMessage (m);
+				}
+
+				Thread.Sleep (HeartBeatUpdateRateMs);
+			}
+		}
+
+
+		// __ API _____________________________________________________________
+
+
+		public override void SendMessage (UasMessage msg)
+		{
+			mSendQueue.Enqueue (msg);
+
+			// Signal send thread
+			mSendSignal.Set ();
+		}
+	}
 }

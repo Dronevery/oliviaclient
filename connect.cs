@@ -32,8 +32,9 @@ public static class MavSettings
 
 public class connect: MonoBehaviour
 {
-
-	// Use this for initialization
+	//udp transporter for MAVLink
+	public MavLinkUdpTransport udpt;
+	
 	public Socket clientSocket;
 	public static Dictionary<string,airobj> aircluster = new Dictionary<string,airobj> ();
 	public GameObject originairplane;
@@ -78,9 +79,9 @@ public class connect: MonoBehaviour
 
 	/* events api 
 	end */
-	private delegate void some_delegate (JsonData data);
+	private delegate void handleDataDelegate (JsonData data);
 
-	private static Dictionary<string, some_delegate> m_map = new Dictionary<string, some_delegate> () {
+	private static Dictionary<string, handleDataDelegate> m_map = new Dictionary<string, handleDataDelegate> () {
 		{ "gamedata", OnReceiveGamedata }
 	};
 	//new Dictionary<string, some_delegate>();
@@ -128,6 +129,10 @@ public class connect: MonoBehaviour
 
 	void Start ()
 	{
+		// Initialize the udp transporter
+		this.udpt = new MavLinkUdpTransport ();
+
+		/*
 		//test();
 		Auth = new auth (this);
 		//game0gui.gamelog("connecting to the server "+publicvar.ip_addr+"...");
@@ -145,7 +150,7 @@ public class connect: MonoBehaviour
 		} catch {
 			Debug.Log ("Falied to connect to the server, connecting....");
 		}
-
+		*/
 	}
 
 

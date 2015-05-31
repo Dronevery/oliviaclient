@@ -196,7 +196,7 @@ namespace System.IO
 					int len2 = count - len1;
 
 					if (len2 > mReadPosition) {
-						throw new InternalBufferOverflowException ("Data is being overwritten without being read. May need to increase capacity.");
+						throw new Exception ("Data is being overwritten without being read. May need to increase capacity.");
 					}
 
 					CopyBytes (buffer, mBuffer, offset, mWritePosition, len1);
