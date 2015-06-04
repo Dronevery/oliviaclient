@@ -26,34 +26,80 @@ using System.IO;
 using System.Net;
 using System.Threading;
 using System.Net.Sockets;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace MavLinkNet
 {
+	/// <summary>
+	/// Sync events 
+	/// implementation of the producer/consumer pattern from MS
+	/// </summary>
+	public class SyncEvents
+	{
+		public SyncEvents ()
+		{
+
+			_newItemEvent = new AutoResetEvent (false);
+			_exitThreadEvent = new ManualResetEvent (false);
+			_eventArray = new WaitHandle[2];
+			_eventArray [0] = _newItemEvent;
+			_eventArray [1] = _exitThreadEvent;
+		}
+
+		public EventWaitHandle ExitThreadEvent {
+			get { return _exitThreadEvent; }
+		}
+
+		public EventWaitHandle NewItemEvent {
+			get { return _newItemEvent; }
+		}
+
+		public WaitHandle[] EventArray {
+			get { return _eventArray; }
+		}
+
+		private EventWaitHandle _newItemEvent;
+		private EventWaitHandle _exitThreadEvent;
+		private WaitHandle[] _eventArray;
+	}
+
+	/// <summary>
+	/// Mav link UDP transporter
+	/// Async implementation with high performance
+	/// </summary>
 	public class MavLinkUdpTransport: MavLinkGenericTransport
 	{
-		public int UdpListeningPort = 7777;
+		public int UdpListeningPort = 14550;
 		// Any available port
-		public int UdpTargetPort = 7778;
-		public IPAddress TargetIpAddress = new IPAddress (new byte[] { 127, 0, 0, 1 });
+		public int UdpTargetPort = 64448;
+		public IPAddress TargetIpAddress = new IPAddress (new byte[] { 100, 65, 9, 7 });
 		public int HeartBeatUpdateRateMs = 1000;
 
 		private Queue<byte[]> mReceiveQueue = new Queue<byte[]> ();
 		private Queue<UasMessage> mSendQueue = new Queue<UasMessage> ();
 		private AutoResetEvent mReceiveSignal = new AutoResetEvent (true);
+		// not in use
+
 		private AutoResetEvent mSendSignal = new AutoResetEvent (true);
 		private MavLinkAsyncWalker mMavLink = new MavLinkAsyncWalker ();
 		private UdpClient mUdpClient;
 		private bool mIsActive = true;
+		private bool mConnected = false;
+
+
+		SyncEvents recvSyncEvents = new SyncEvents ();
+		SyncEvents sendSyncEvents = new SyncEvents ();
 
 
 		public override void Initialize ()
 		{
 			InitializeMavLink ();
 			InitializeUdpListener (UdpListeningPort);
-			InitializeUdpSender (TargetIpAddress, UdpTargetPort);
-			Debug.Log ("udp transporter ready!");
+//			InitializeUdpSender (TargetIpAddress, UdpTargetPort);
+
+//			Debug.Log ("udp transporter ready!");
 		}
 
 		public override void Dispose ()
@@ -75,6 +121,7 @@ namespace MavLinkNet
 			IPEndPoint ep = new IPEndPoint (IPAddress.Any, port);
 			mUdpClient = new UdpClient (ep);
 
+
 			mUdpClient.BeginReceive (
 				new AsyncCallback (ReceiveCallback), ep);
 
@@ -86,6 +133,8 @@ namespace MavLinkNet
 		{
 			ThreadPool.QueueUserWorkItem (
 				new WaitCallback (ProcessSendQueue), new IPEndPoint (targetIp, targetPort));
+			this.BeginHeartBeatLoop ();
+
 		}
 
 
@@ -95,17 +144,36 @@ namespace MavLinkNet
 		private void ReceiveCallback (IAsyncResult ar)
 		{
 			try {
-				IPEndPoint ep = ar.AsyncState as IPEndPoint;
-				mReceiveQueue.Enqueue (mUdpClient.EndReceive (ar, ref ep));
+				IPEndPoint ep = new IPEndPoint (0, 0);//= ar.AsyncState as IPEndPoint;
+
+				byte[] buffer = mUdpClient.EndReceive (ar, ref ep);
+//				Console.print (string.Format ("received ip: {0}  port:   {1}", ep.Address.ToString (), ep.Port.ToString ()));
+				//set the target IP and Port
+
+				if (!mConnected) {
+					mConnected = true;
+					this.TargetIpAddress = new IPAddress (ep.Address.GetAddressBytes ());
+					this.UdpTargetPort = ep.Port;
+					this.InitializeUdpSender (this.TargetIpAddress, this.UdpTargetPort);
+				}
+					
+
+//				Console.print (string.Format ("target ip: {0}  port:   {1}", ep.Address.ToString (), ep.Port.ToString ()));
+
+				if (!recvSyncEvents.ExitThreadEvent.WaitOne (0, false)) {
+					lock (((ICollection)mReceiveQueue).SyncRoot) {						
+						mReceiveQueue.Enqueue (buffer);
+						recvSyncEvents.NewItemEvent.Set ();
+					}				
+				}
 
 				if (!mIsActive) {
-					mReceiveSignal.Set ();
+					Console.print ("CONNECTION LOST 1");
+					// process all data already received
+					recvSyncEvents.NewItemEvent.Set ();
 					return;
 				}
-				mReceiveSignal.Set ();
 				mUdpClient.BeginReceive (new AsyncCallback (ReceiveCallback), ar);
-
-				// Signal processReceive thread
 
 			} catch (SocketException) {
 				mIsActive = false;
@@ -114,37 +182,17 @@ namespace MavLinkNet
 
 		private void ProcessReceiveQueue (object state)
 		{
+			
 			while (true) {
 				byte[] buffer;
 
-
-				try {
-					buffer = mReceiveQueue.Dequeue ();
-				} catch (Exception e) {
-					Console.print ("cannot dequeue " + e.Message);
-					mReceiveSignal.WaitOne ();
-					if (!mIsActive) {
-						Console.print ("mIsActive false!!! connection lost");
-						break;
+				if (WaitHandle.WaitAny (recvSyncEvents.EventArray) != 1) {
+					lock (((ICollection)mReceiveQueue).SyncRoot) {
+						buffer = mReceiveQueue.Dequeue ();
+//						Console.print ("dequeue..");
+						mMavLink.ProcessReceivedBytes (buffer, 0, buffer.Length);
 					}
-					
-					continue;
 				}
-				Console.print ("buffer length: " + buffer.Length.ToString ());
-				mMavLink.ProcessReceivedBytes (buffer, 0, buffer.Length);
-
-
-				/*
-				if (mReceiveQueue.TryDequeue (out buffer)) {
-					mMavLink.ProcessReceivedBytes (buffer, 0, buffer.Length);
-				} else {
-					// Empty queue, sleep until signalled
-					mReceiveSignal.WaitOne ();
-
-					if (!mIsActive)
-						break;
-				}
-				*/
 			}
 
 			HandleReceptionEnded (this);
@@ -159,19 +207,16 @@ namespace MavLinkNet
 			while (true) {
 				UasMessage msg = new UasMessage ();
 
-				try {
-					msg = mSendQueue.Dequeue ();
-				} catch (Exception e) {
-					// Queue is empty, sleep until signalled
-					Console.print ("send queue empty: " + e.Message);
-					mSendSignal.WaitOne ();
-
-					if (!mIsActive)
-						break;
-					continue;
-				} finally {
-					SendMavlinkMessage (state as IPEndPoint, msg);
+				if (WaitHandle.WaitAny (sendSyncEvents.EventArray) != 1) {
+					lock (((ICollection)mSendQueue).SyncRoot) {
+						msg = mSendQueue.Dequeue ();
+						SendMavlinkMessage (state as IPEndPoint, msg);
+					}
 				}
+
+				if (!mIsActive)
+					break;
+
 			}
 		}
 
@@ -208,10 +253,21 @@ namespace MavLinkNet
 
 		public override void SendMessage (UasMessage msg)
 		{
-			mSendQueue.Enqueue (msg);
+			if (!this.mConnected) {
+				Console.print ("connection lost. please connect to the vehicle first");
+				return;
+			}
 
-			// Signal send thread
-			mSendSignal.Set ();
+			Console.print ("send msg id: " + msg.MessageId.ToString ());
+			if (!sendSyncEvents.ExitThreadEvent.WaitOne (0, false)) {
+				lock (((ICollection)mSendQueue).SyncRoot) {
+					mSendQueue.Enqueue (msg);
+					sendSyncEvents.NewItemEvent.Set ();
+				}
+
+			}
 		}
 	}
+
+
 }

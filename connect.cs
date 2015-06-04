@@ -122,15 +122,15 @@ public class connect: MonoBehaviour
 
 	void test ()
 	{
-		GameObject su27 = (GameObject)MonoBehaviour.Instantiate (originairplane);
-		su27.transform.position = new Vector3 (0, 0, 0);
+//		GameObject su27 = (GameObject)MonoBehaviour.Instantiate (originairplane);
+//		su27.transform.position = new Vector3 (0, 0, 0);
 	}
 
 
 	void Start ()
 	{
 		// Initialize the udp transporter
-		this.udpt = new MavLinkUdpTransport ();
+//		this.udpt = new MavLinkUdpTransport ();
 
 		/*
 		//test();

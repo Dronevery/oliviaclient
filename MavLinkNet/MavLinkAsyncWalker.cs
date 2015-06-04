@@ -24,6 +24,7 @@ THE SOFTWARE.
 using System;
 using System.IO;
 using System.Threading;
+using System.Collections;
 
 namespace MavLinkNet
 {
@@ -44,7 +45,7 @@ namespace MavLinkNet
 
 		public MavLinkAsyncWalker ()
 		{
-			Console.print ("MavLinkAsyncWalker is ready!");
+//			Console.print ("MavLinkAsyncWalker is ready!");
 			mProcessStream = new BlockingCircularStream (DefaultCircularBufferSize);
 
 			ThreadPool.QueueUserWorkItem (new WaitCallback (PacketProcessingWorker));
@@ -56,7 +57,11 @@ namespace MavLinkNet
 		/// <param name="buffer">The buffer to process</param>
 		public override void ProcessReceivedBytes (byte[] buffer, int start, int length)
 		{
-			mProcessStream.Write (buffer, 0, buffer.Length);
+//			Console.print ("processsing buffer\t");
+			lock (mProcessStream) {
+				mProcessStream.Write (buffer, 0, buffer.Length);
+			}
+//			Console.print ("stream length " + mProcessStream.Length);
 		}
 
 
@@ -67,21 +72,31 @@ namespace MavLinkNet
 		{
 			using (BinaryReader reader = MavLinkPacket.GetBinaryReader (mProcessStream)) {
 				while (true) {
+//					Console.print ("packetProcess worker alive");
+
 					SyncStream (reader);
 					MavLinkPacket packet = MavLinkPacket.Deserialize (reader, 0);
 
+//					MavLinkPacket packet = new MavLinkPacket ();
+//					packet.IsValid = true;
+
+//					Console.print ("packet deserialized! ");
+
 					if (packet.IsValid) {
+//						Console.print ("valid packet received");
 						NotifyPacketReceived (packet);
 					} else {
 						NotifyPacketDiscarded (packet);
 					}
 				}
+//				Console.print ("packet Process worker is going to CLOSE");
 			}
 		}
 
 		private void SyncStream (BinaryReader s)
 		{
 			while (s.ReadByte () != PacketSignalByte) {
+				Console.print ("skipping until a packet HEAD");
 				// Skip bytes until a packet start is found
 			}
 		}

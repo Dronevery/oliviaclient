@@ -19,58 +19,59 @@ public class FPSFlight : MonoBehaviour
 	private float oldSpeed = 0.0f;
 	
 	private float recToX = 0f;
-	void Start()
+
+	void Start ()
 	{
 		
 	}
-	
+
 	void FixedUpdate ()
 	{
 		//控制机身旋转;
-		baseRotationX = Input.GetAxis("Horizontal")*rotationSpeedX;
-		baseRotationY = -Input.GetAxis("Vertical")*rotationSpeedY;
+		baseRotationX = Input.GetAxis ("Horizontal") * rotationSpeedX;
+		baseRotationY = -Input.GetAxis ("Vertical") * rotationSpeedY;
 		float angleZ = baseRotationX * 30;
 		float angleX = baseRotationY * 15;
-		float force = (Input.GetKey (KeyCode.Space))? 1 :0;
+		float force = (Input.GetKey (KeyCode.Space)) ? 1 : 0;
 		shipModel.localEulerAngles = new Vector3 (angleX, 0, angleZ);
 		
-		float toX = -Input.GetAxis("Horizontal") * moveSpeed;
-		float toZ = -Input.GetAxis("Vertical") * moveSpeed;
+		float toX = -Input.GetAxis ("Horizontal") * moveSpeed;
+		float toZ = -Input.GetAxis ("Vertical") * moveSpeed;
 
 		//限制;
-		Vector3 screenPos = camera.WorldToScreenPoint(shipModel.position);
-		if(Input.GetAxis("Horizontal")<0){
+		Vector3 screenPos = camera.WorldToScreenPoint (shipModel.position);
+		if (Input.GetAxis ("Horizontal") < 0) {
 			//向左移动;
-			if(screenPos.x<=50){
+			if (screenPos.x <= 50) {
 				toX = 0;
 			}
 		}
 		
-		if(Input.GetAxis("Horizontal")>0){
+		if (Input.GetAxis ("Horizontal") > 0) {
 			//向右移动;
-			if(screenPos.x>=Screen.width-50){
+			if (screenPos.x >= Screen.width - 50) {
 				toX = 0;
 			}
 		}
 		
-		if(Input.GetAxis("Vertical")<0){
+		if (Input.GetAxis ("Vertical") < 0) {
 			//向下移动;
-			if(screenPos.y<=0){
+			if (screenPos.y <= 0) {
 				toZ = 0;
 			}
 		}
 		
-		if(Input.GetAxis("Vertical")>0){
+		if (Input.GetAxis ("Vertical") > 0) {
 			//向上移动;
-			if(screenPos.y>=Screen.height-110){
+			if (screenPos.y >= Screen.height - 110) {
 				toZ = 0;
 			}
 		}
 		
 		//移动机身;
-		moveDirection.Set(toX,0, toZ);
+		moveDirection.Set (toX, 0, toZ);
 		this.transform.position += moveDirection * Time.deltaTime;
-		this.rigidbody.AddForce (transform.forward * force * 100);
+//		this.rigidbody.AddForce (transform.forward * force * 100);
 	}
 	
 }

@@ -12,80 +12,85 @@ public class CameraManager : MonoBehaviour
 	private GameObject dashboard;
 	private GameObject datas;
 
-		// Use this for initialization
-		void Start ()
-		{
-			cameras = new Dictionary<string, Camera> ();	
+	// Use this for initialization
+	void Start ()
+	{
+		cameras = new Dictionary<string, Camera> ();	
 			
-			currentCamera = initCamera;
+		currentCamera = initCamera;
 			
-			cameras ["airplane"] = GameObject.Find ("airplane").GetComponentInChildren<Camera> ();
+		cameras ["airplane0"] = GameObject.Find ("airplane0").GetComponentInChildren<Camera> ();
 
 		getGUIs ();
-		}
-		// Update is called once per frame
-		void Update ()
-		{
+	}
+	// Update is called once per frame
+	void Update ()
+	{
 			
-		}
+	}
 
-	public void Activate(Camera ca){
+	public void Activate (Camera ca)
+	{
 		if (!ca.gameObject.activeSelf) {
 			if (ca == initCamera) {
 				foreach (KeyValuePair<string, Camera> entry  in cameras) {
 					Camera cam = (Camera)entry.Value;
-					cam.gameObject.SetActive(false);
+					cam.gameObject.SetActive (false);
 				}
-				hideGUIs();
-			}
-			else {
-				initCamera.gameObject.SetActive(false);
+				hideGUIs ();
+			} else {
+				initCamera.gameObject.SetActive (false);
 				foreach (KeyValuePair<string, Camera> entry  in cameras) {
 					Camera cam = (Camera)entry.Value;
-					cam.gameObject.SetActive(false);
+					cam.gameObject.SetActive (false);
 				}
-				showGUIs();
+				showGUIs ();
 			}
-			ca.gameObject.SetActive(true);
+			ca.gameObject.SetActive (true);
 			currentCamera = ca;
 		}
 	}
 
-	public void switchCamera(GameObject air){
+	public void switchCamera (GameObject air)
+	{
 		try {
 			string name = air.name;
-			Camera ca = cameras[name];
-			Activate(ca);
-				} catch (System.Exception ex) {
+			Camera ca = cameras [name];
+			Activate (ca);
+		} catch (System.Exception ex) {
 			Debug.Log (ex);
 			return;	
-				}
+		}
 	}
 
-	public void switchCamera(string name){
+	public void switchCamera (string name)
+	{
 		if (name == "main") {
-			Activate(initCamera);
+			Activate (initCamera);
 			return;
-				}
+		}
 		try {
-			Camera ca = cameras[name];
-			Activate(ca);
-				} catch (System.Exception ex) {
-			Debug.Log(ex);
-				}
+			Camera ca = cameras [name];
+			Activate (ca);
+		} catch (System.Exception ex) {
+			Debug.Log (ex);
+		}
 	}
 
-	public void getGUIs(){
-		this.dashboard = GameObject.Find("zhuangtai");
-		this.datas = GameObject.Find("Status");
+	public void getGUIs ()
+	{
+		this.dashboard = GameObject.Find ("zhuangtai");
+		this.datas = GameObject.Find ("Status");
 	}
 
-	public void hideGUIs(){
+	public void hideGUIs ()
+	{
 		this.dashboard.SetActive (false);
 		this.datas.SetActive (false);
 	}
 
-	public void showGUIs(){
+	public void showGUIs ()
+	{
 		this.dashboard.SetActive (true);
 		this.datas.SetActive (true);
 	}

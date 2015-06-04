@@ -60,6 +60,7 @@ public class DataPostureSphere: IDataPostureSphere
 
 	public void UpdateData (string name, float pitch, float yaw, float roll)
 	{
+//		Console.print ("it's me !!!");
 		if (!dataRotates.ContainsKey (name) || dataRotates [name] == null) {
 			Debug.Log ("the plane named " + name + " does not exist");
 			this.AddPlane (name);

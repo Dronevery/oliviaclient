@@ -26,55 +26,52 @@ using System.Collections.Generic;
 
 namespace MavLinkNet
 {
-    /// <summary>
-    /// Holds message objects representing state. Meant for status messages, not communication objects
-    /// </summary>
-    public class MavLinkState
-    {
-        private Dictionary<string, UasMessage> mState = new Dictionary<string, UasMessage>();
-        private List<UasMessage> mHeartBeatMessages = new List<UasMessage>();
+	/// <summary>
+	/// Holds message objects representing state. Meant for status messages, not communication objects
+	/// </summary>
+	public class MavLinkState
+	{
+		private Dictionary<string, UasMessage> mState = new Dictionary<string, UasMessage> ();
+		private List<UasMessage> mHeartBeatMessages = new List<UasMessage> ();
 
-        public MavLinkState()
-        {
-            mState.Add("Heartbeat", new UasHeartbeat
-            {
-                Type = MavType.Quadrotor,
-                Autopilot = MavAutopilot.Ardupilotmega,
-                BaseMode = MavModeFlag.AutoEnabled,
-                CustomMode = 0,
-                SystemStatus = MavState.Active,
-                MavlinkVersion = (byte)3,
-            });
+		public MavLinkState ()
+		{
+			mState.Add ("Heartbeat", new UasHeartbeat {
+				Type = MavType.Quadrotor,
+				Autopilot = MavAutopilot.Ardupilotmega,
+				BaseMode = MavModeFlag.AutoEnabled,
+				CustomMode = 0,
+				SystemStatus = MavState.Active,
+				MavlinkVersion = (byte)3,
+			});
 
-            mState.Add("SysStatus", new UasSysStatus
-            {
-                Load = 500,
-                VoltageBattery = 11000,
-                CurrentBattery = -1,
-                BatteryRemaining = -1
-            });
+			mState.Add ("SysStatus", new UasSysStatus {
+				Load = 500,
+				VoltageBattery = 11000,
+				CurrentBattery = -1,
+				BatteryRemaining = -1
+			});
 
-            mState.Add("LocalPositionNed", new UasLocalPositionNed());
+			mState.Add ("LocalPositionNed", new UasLocalPositionNed ());
 
-            mState.Add("Attitude", new UasAttitude());
-        }
+			mState.Add ("Attitude", new UasAttitude ());
+		}
 
-        public UasMessage Get(string mavlinkObjectName)
-        {
-            return mState[mavlinkObjectName];
-        }
+		public UasMessage Get (string mavlinkObjectName)
+		{
+			return mState [mavlinkObjectName];
+		}
 
-        public List<UasMessage> GetHeartBeatObjects()
-        {
-            if (mHeartBeatMessages.Count == 0)
-            {
-                mHeartBeatMessages.Add(Get("Heartbeat"));
-                mHeartBeatMessages.Add(Get("SysStatus"));
-                mHeartBeatMessages.Add(Get("LocalPositionNed"));
-                mHeartBeatMessages.Add(Get("Attitude"));
-            }
+		public List<UasMessage> GetHeartBeatObjects ()
+		{
+			if (mHeartBeatMessages.Count == 0) {
+				mHeartBeatMessages.Add (Get ("Heartbeat"));
+//                mHeartBeatMessages.Add(Get("SysStatus"));
+//                mHeartBeatMessages.Add(Get("LocalPositionNed"));
+//                mHeartBeatMessages.Add(Get("Attitude"));
+			}
 
-            return mHeartBeatMessages;
-        }
-    }
+			return mHeartBeatMessages;
+		}
+	}
 }

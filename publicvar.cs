@@ -5,17 +5,21 @@ using System.Collections.Generic;
 
 public class publicvar : MonoBehaviour
 {
+	public static Vector3 home = new Vector3 (0, 0, 0);
 	public static Vector3 landPosition = new Vector3 (-1000, -1000, -1000);
 	public string mode = "navigate";
 	public GameObject originairplane1;
 	// the model of the plane
 	public GameObject originairplane2;
-	public static int basezoom = 13;
+	public static int basezoom = 15;
 	// represent the size of one tile (Cut the whole into 2^zoom x 2^zoom tiles)
 
 	public static string ip_addr = "127.0.0.1";
+	public static int MAVLINK_LISTENNING_PORT = 14550;
+	public static int MAVLINK_TARGET_PORT = 14550;
+
 	public static string host = "map.dronevery.com:8000";
-// "127.0.0.1:8000";
+	// "127.0.0.1:8000";
 	public static string username = "admin";
 	// use for authorizationo
 	public static string passwd = "qiaochu";
@@ -29,7 +33,7 @@ public class publicvar : MonoBehaviour
 
 	public static float lengthmesh_17 = 2296.26f;
 	public static float lengthmesh = lengthmesh_17;
-//*Mathf.Pow(2,17-zoom);// the size of one tile in Unity world
+	//*Mathf.Pow(2,17-zoom);// the size of one tile in Unity world
 
 	public static int loadwidth = 5;
 	public static int maxTileX = loadwidth;
@@ -49,7 +53,7 @@ public class publicvar : MonoBehaviour
 	// not in use
 	//117.2688041888f;
 	public static float latitude = 41.1472260440f;
-// not in use
+	// not in use
 	//31.8371046436f;
 
 	public Dictionary<string, Terrain> terrains;

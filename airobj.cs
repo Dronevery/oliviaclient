@@ -55,7 +55,7 @@ public class airobj
 		loc = maplib.getUnityPosfromLatlng (lon, lat, publicvar.basezoom);
 
 		go.transform.position = new Vector3 (loc [0], height, loc [2]);
-		go.transform.Rotate (new Vector3 (0, 0, 0));
+//		go.transform.Rotate (new Vector3 (0, 0, 0));
 		if (this.go.GetComponentInChildren<Camera> () == cm.currentCamera) {	
 			updateGUIComponents ();
 		}
@@ -66,7 +66,7 @@ public class airobj
 
 	public airobj (string name, GameObject originairplane, JsonData jd)
 	{
-		getGUIComponents ();
+//		getGUIComponents ();
 		cm = GameObject.Find ("Connecter").GetComponent<CameraManager> ();
 		// create a plane on the stage
 		go = (GameObject)MonoBehaviour.Instantiate (originairplane);
@@ -80,6 +80,7 @@ public class airobj
 		// register to the camera manager
 		CameraManager cmngr = GameObject.Find ("Connecter").GetComponent<CameraManager> ();
 		cmngr.cameras [name] = camera;
+//		cmngr.switchCamera (name);
 
 		update (jd);
 		this.go.AddComponent ("TerrainManager");
@@ -135,8 +136,8 @@ public class airobj
 	public void updateGUIComponents ()
 	{
 		this.pitchimage.transform.localPosition = new Vector3 (0, this.pitch * 2, 0);
-		this.rollobj.transform.rotation = Quaternion.Euler (0, 0, this.roll);
-		this.yawobj.transform.rotation = Quaternion.Euler (0, 0, this.yaw);
+//		this.rollobj.transform.rotation = Quaternion.Euler (0, 0, this.roll);
+//		this.yawobj.transform.rotation = Quaternion.Euler (0, 0, this.yaw);
 		this.lontext.text = this.lon.ToString ();
 		this.lattext.text = this.lat.ToString ();
 //		this.velobj.guiText.text = this.go.transform.;
